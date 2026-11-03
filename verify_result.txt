@@ -1,0 +1,5 @@
+OK: streamlit
+OK: requests
+OK: pandas
+OK: dotenv
+OK: plotly
