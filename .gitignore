@@ -1,0 +1,22 @@
+# Environment variables (never commit this)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# Cache de dados locais
+.cache/
+
+# Streamlit — ignore local overrides but commit theme config
+.streamlit/*.credentials.toml
+.streamlit/secrets.toml
+
+# IDE
+.vscode/
+.idea/
