@@ -51,10 +51,10 @@ except Exception:
     pass
 
 # ------------------------------------------------------------------
-# CSS Styling - Dynamic based on sidebar state
+# CSS Styling - Clean professional design like reference
 # ------------------------------------------------------------------
 
-sidebar_width = "80px" if st.session_state.sidebar_collapsed else "280px"
+sidebar_width = "60px" if st.session_state.sidebar_collapsed else "260px"
 
 st.markdown(f"""
 <style>
@@ -64,6 +64,7 @@ st.markdown(f"""
     --bg: #f9fafb;
     --card: #ffffff;
     --fg: #18181b;
+    --fg-secondary: #52525b;
     --border: #e5e7eb;
     --muted: #f3f4f6;
     --muted-fg: #71717a;
@@ -75,7 +76,7 @@ st.markdown(f"""
 html, body, [class*="st-"] {{ font-family: 'Inter', sans-serif !important; }}
 .stApp {{ background: var(--bg) !important; }}
 
-/* Sidebar - controlled width */
+/* Sidebar */
 section[data-testid="stSidebar"] {{
     background: var(--card) !important;
     border-right: 1px solid var(--border) !important;
@@ -85,50 +86,105 @@ section[data-testid="stSidebar"] {{
 
 section[data-testid="stSidebar"] > div {{
     width: {sidebar_width} !important;
+    padding-top: 1rem !important;
 }}
 
-/* Icon button style for collapsed mode */
-.icon-btn {{
+/* Hide default sidebar toggle */
+button[kind="header"] {{
+    display: none !important;
+}}
+
+/* Menu item style - clean like reference */
+.menu-item {{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin: 2px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    color: var(--fg-secondary);
+    font-size: 14px;
+    font-weight: 500;
+}}
+
+.menu-item:hover {{
+    background: var(--muted);
+}}
+
+.menu-item.active {{
+    color: var(--orange);
+}}
+
+.menu-item.active svg {{
+    stroke: var(--orange);
+}}
+
+.menu-item svg {{
+    flex-shrink: 0;
+    stroke: var(--fg-secondary);
+}}
+
+/* Hamburger toggle button */
+.hamburger-btn {{
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 50px;
-    height: 50px;
-    border-radius: 10px;
-    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    margin: 8px auto 16px auto;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+}}
+
+.hamburger-btn:hover {{
+    background: var(--muted);
+}}
+
+.hamburger-icon {{
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}}
+
+.hamburger-icon span {{
+    display: block;
+    width: 20px;
+    height: 2px;
+    background: var(--fg);
+    border-radius: 1px;
+}}
+
+/* Collapsed mode icon button */
+.icon-only-btn {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
     margin: 4px auto;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    color: var(--fg-secondary);
 }}
 
-.icon-btn:hover {{
+.icon-only-btn:hover {{
     background: var(--muted);
-    border-color: var(--border);
 }}
 
-.icon-btn.active {{
+.icon-only-btn.active {{
+    color: var(--orange);
     background: var(--orange-light);
-    border-color: var(--orange);
 }}
 
-/* Toggle button */
-.toggle-btn {{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 8px;
-    background: var(--muted);
-    border-radius: var(--radius);
-    cursor: pointer;
-    margin-bottom: 10px;
-    font-size: 0.85rem;
-    color: var(--muted-fg);
-}}
-
-.toggle-btn:hover {{
-    background: var(--border);
+.icon-only-btn svg {{
+    stroke: currentColor;
 }}
 
 /* Metric cards */
@@ -161,8 +217,24 @@ section[data-testid="stSidebar"] > div {{
     overflow: hidden !important;
 }}
 
-/* Buttons */
-.stButton button {{
+/* Override Streamlit button styles in sidebar */
+section[data-testid="stSidebar"] .stButton button {{
+    background: transparent !important;
+    color: var(--fg-secondary) !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-weight: 500 !important;
+    justify-content: flex-start !important;
+    padding: 12px 16px !important;
+}}
+
+section[data-testid="stSidebar"] .stButton button:hover {{
+    background: var(--muted) !important;
+    color: var(--fg) !important;
+}}
+
+/* Primary buttons (main content) */
+.stApp > section > div .stButton button {{
     background: var(--orange) !important;
     color: #fff !important;
     border: none !important;
@@ -170,7 +242,7 @@ section[data-testid="stSidebar"] > div {{
     font-weight: 600 !important;
 }}
 
-.stButton button:hover {{
+.stApp > section > div .stButton button:hover {{
     background: #ea580c !important;
 }}
 
@@ -199,12 +271,22 @@ if "selected_sprint_name" not in st.session_state:
     st.session_state.selected_sprint_name = ""
 
 # ------------------------------------------------------------------
-# Product icons mapping
+# Product icons mapping - SVG line icons (professional style)
 # ------------------------------------------------------------------
 
+# SVG icons inline - clean line style like the reference image
+PRODUCT_SVG_ICONS = {
+    "VADM": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>''',
+    "VPLY": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>''',
+    "VMPG": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>''',
+    "VSUS": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>''',
+    "VBEP": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>''',
+}
+
+# Emoji fallback for main content title
 PRODUCT_ICONS = {
     "VADM": "⚙️",
-    "VPLY": "🎮",
+    "VPLY": "▶️",
     "VMPG": "💳",
     "VSUS": "🔧",
     "VBEP": "📊",
@@ -270,76 +352,80 @@ COLOR_PRIMARY = "#f97316"
 
 
 # ------------------------------------------------------------------
-# Sidebar — Collapsible Product Navigation
+# Sidebar — Clean professional navigation like reference
 # ------------------------------------------------------------------
 
+# Hamburger icon SVG
+HAMBURGER_SVG = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>'''
+
+REFRESH_SVG = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'''
+
 with st.sidebar:
-    # Toggle button
-    toggle_icon = "◀️" if not st.session_state.sidebar_collapsed else "▶️"
-    toggle_label = "Recolher" if not st.session_state.sidebar_collapsed else ""
-    
-    if st.button(f"{toggle_icon} {toggle_label}".strip(), key="toggle_sidebar", use_container_width=True):
+    # Toggle button (hamburger)
+    if st.button("≡", key="toggle_sidebar", help="Expandir/Recolher menu"):
         st.session_state.sidebar_collapsed = not st.session_state.sidebar_collapsed
         st.rerun()
     
     if st.session_state.sidebar_collapsed:
-        # COLLAPSED MODE: Icons only
-        st.markdown("<div style='text-align: center; margin: 10px 0;'>🐛</div>", unsafe_allow_html=True)
-        st.markdown("---")
+        # COLLAPSED MODE: Icons only centered
+        st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
         
         for key, name in PROJECTS.items():
-            icon = PRODUCT_ICONS.get(key, "📁")
             is_active = st.session_state.selected_project == key
+            svg_icon = PRODUCT_SVG_ICONS.get(key, PRODUCT_SVG_ICONS["VADM"])
+            active_class = "active" if is_active else ""
             
-            # Use columns to center the button
-            _, col_icon, _ = st.columns([0.2, 0.6, 0.2])
-            with col_icon:
-                btn_type = "primary" if is_active else "secondary"
-                if st.button(icon, key=f"icon_{key}", help=name, type=btn_type):
-                    st.session_state.selected_project = key
-                    st.session_state.selected_sprint_id = None
-                    st.session_state.selected_sprint_name = ""
-                    st.rerun()
-        
-        st.markdown("---")
-        
-        # Refresh button (icon only)
-        _, col_refresh, _ = st.columns([0.2, 0.6, 0.2])
-        with col_refresh:
-            if st.button("🔄", key="refresh_collapsed", help="Atualizar dados"):
-                load_sprints.clear()
-                load_issues.clear()
-                load_sprint_trend.clear()
-                clear_cache()
+            st.markdown(f'''
+            <div class="icon-only-btn {active_class}" title="{name}" onclick="document.getElementById('btn_{key}').click()">
+                {svg_icon}
+            </div>
+            ''', unsafe_allow_html=True)
+            
+            # Hidden button for click handling
+            if st.button("​", key=f"icon_{key}", help=name):  # Zero-width space
+                st.session_state.selected_project = key
+                st.session_state.selected_sprint_id = None
+                st.session_state.selected_sprint_name = ""
                 st.rerun()
+        
+        st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
+        
+        # Refresh icon
+        if st.button("↻", key="refresh_collapsed", help="Atualizar dados"):
+            load_sprints.clear()
+            load_issues.clear()
+            load_sprint_trend.clear()
+            clear_cache()
+            st.rerun()
     
     else:
-        # EXPANDED MODE: Full menu
-        st.markdown("## 🐛 Sprint Quality")
-        st.markdown("---")
-        st.markdown("**PRODUTOS**")
+        # EXPANDED MODE: Full menu with SVG icons
+        st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
         
         for key, name in PROJECTS.items():
-            icon = PRODUCT_ICONS.get(key, "📁")
             is_active = st.session_state.selected_project == key
+            svg_icon = PRODUCT_SVG_ICONS.get(key, PRODUCT_SVG_ICONS["VADM"])
             
             if is_active:
-                st.markdown(f"""
-                <div style="background: #fff7ed; border-left: 3px solid #f97316; 
-                            border-radius: 0 6px 6px 0; padding: 10px 12px; margin: 4px 0;">
-                    <span style="color: #f97316; font-weight: 600;">{icon} {name}</span>
+                # Active item with orange color
+                st.markdown(f'''
+                <div class="menu-item active">
+                    <span style="color: #f97316;">{svg_icon.replace('stroke="currentColor"', 'stroke="#f97316"')}</span>
+                    <span>{name}</span>
                 </div>
-                """, unsafe_allow_html=True)
+                ''', unsafe_allow_html=True)
             else:
-                if st.button(f"{icon} {name}", key=f"menu_{key}", use_container_width=True):
+                # Clickable button for inactive items
+                if st.button(f"      {name}", key=f"menu_{key}", use_container_width=True):
                     st.session_state.selected_project = key
                     st.session_state.selected_sprint_id = None
                     st.session_state.selected_sprint_name = ""
                     st.rerun()
         
+        st.markdown("<div style='height: 30px'></div>", unsafe_allow_html=True)
         st.markdown("---")
         
-        if st.button("🔄 Atualizar dados", key="refresh_expanded", use_container_width=True):
+        if st.button("↻  Atualizar dados", key="refresh_expanded", use_container_width=True):
             load_sprints.clear()
             load_issues.clear()
             load_sprint_trend.clear()
