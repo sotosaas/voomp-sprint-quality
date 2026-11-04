@@ -1,7 +1,7 @@
 """app.py
 
 Sprint Quality Dashboard — Voomp
-Collapsible sidebar with icon-only mode.
+Fixed: Plotly xaxis conflict, deprecated use_container_width
 """
 
 import streamlit as st
@@ -44,6 +44,91 @@ except Exception:
     pass
 
 # ------------------------------------------------------------------
+# CSS Styling - Simple and stable
+# ------------------------------------------------------------------
+
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg: #f9fafb;
+    --card: #ffffff;
+    --fg: #18181b;
+    --border: #e5e7eb;
+    --muted: #f3f4f6;
+    --muted-fg: #71717a;
+    --orange: #f97316;
+    --orange-light: #fff7ed;
+    --radius: 0.5rem;
+}
+
+html, body, [class*="st-"] { font-family: 'Inter', sans-serif !important; }
+.stApp { background: var(--bg) !important; }
+
+/* Sidebar */
+section[data-testid="stSidebar"] {
+    background: var(--card) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+/* Metric cards */
+[data-testid="metric-container"] {
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    padding: 1rem 1.25rem !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05) !important;
+}
+
+[data-testid="metric-container"] label {
+    color: var(--muted-fg) !important;
+    font-size: .7rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+}
+
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    color: var(--fg) !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+}
+
+/* DataFrames */
+[data-testid="stDataFrame"] {
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    overflow: hidden !important;
+}
+
+/* Buttons */
+.stButton button {
+    background: var(--orange) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius) !important;
+    font-weight: 600 !important;
+}
+
+.stButton button:hover {
+    background: #ea580c !important;
+}
+
+/* Headers */
+h1, h2, h3 { font-family: 'Inter', sans-serif !important; color: var(--fg) !important; }
+
+/* Hide Streamlit branding */
+#MainMenu, footer, header { visibility: hidden !important; }
+
+@media(max-width:900px) {
+    [data-testid="metric-container"] { padding: .75rem !important; }
+    [data-testid="metric-container"] [data-testid="stMetricValue"] { font-size: 1.25rem !important; }
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ------------------------------------------------------------------
 # Session state
 # ------------------------------------------------------------------
 
@@ -53,8 +138,6 @@ if "selected_sprint_id" not in st.session_state:
     st.session_state.selected_sprint_id = None
 if "selected_sprint_name" not in st.session_state:
     st.session_state.selected_sprint_name = ""
-if "sidebar_expanded" not in st.session_state:
-    st.session_state.sidebar_expanded = True
 
 # ------------------------------------------------------------------
 # Product icons mapping
@@ -67,105 +150,6 @@ PRODUCT_ICONS = {
     "VSUS": "🔧",
     "VBEP": "📊",
 }
-
-# ------------------------------------------------------------------
-# CSS Styling
-# ------------------------------------------------------------------
-
-# Determine sidebar width based on state
-sidebar_width = "280px" if st.session_state.sidebar_expanded else "70px"
-
-st.markdown(f"""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-:root {{
-    --bg: #f9fafb;
-    --card: #ffffff;
-    --fg: #18181b;
-    --border: #e5e7eb;
-    --muted: #f3f4f6;
-    --muted-fg: #71717a;
-    --orange: #f97316;
-    --orange-light: #fff7ed;
-    --radius: 0.5rem;
-}}
-
-html, body, [class*="st-"] {{ font-family: 'Inter', sans-serif !important; }}
-.stApp {{ background: var(--bg) !important; }}
-
-/* Sidebar width control */
-section[data-testid="stSidebar"] {{
-    background: var(--card) !important;
-    border-right: 1px solid var(--border) !important;
-    width: {sidebar_width} !important;
-    min-width: {sidebar_width} !important;
-}}
-
-section[data-testid="stSidebar"] > div:first-child {{
-    width: {sidebar_width} !important;
-    min-width: {sidebar_width} !important;
-}}
-
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {{
-    width: {sidebar_width} !important;
-}}
-
-/* Metric cards */
-[data-testid="metric-container"] {{
-    background: var(--card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    padding: 1rem 1.25rem !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,.05) !important;
-}}
-
-[data-testid="metric-container"] label {{
-    color: var(--muted-fg) !important;
-    font-size: .7rem !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: .04em !important;
-}}
-
-[data-testid="metric-container"] [data-testid="stMetricValue"] {{
-    color: var(--fg) !important;
-    font-size: 1.5rem !important;
-    font-weight: 700 !important;
-}}
-
-/* DataFrames */
-[data-testid="stDataFrame"] {{
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    overflow: hidden !important;
-}}
-
-/* Buttons */
-.stButton button {{
-    background: var(--orange) !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: var(--radius) !important;
-    font-weight: 600 !important;
-}}
-
-.stButton button:hover {{
-    background: #ea580c !important;
-}}
-
-/* Headers */
-h1, h2, h3 {{ font-family: 'Inter', sans-serif !important; color: var(--fg) !important; }}
-
-/* Hide Streamlit branding */
-#MainMenu, footer, header {{ visibility: hidden !important; }}
-
-@media(max-width:900px) {{
-    [data-testid="metric-container"] {{ padding: .75rem !important; }}
-    [data-testid="metric-container"] [data-testid="stMetricValue"] {{ font-size: 1.25rem !important; }}
-}}
-</style>
-""", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
 # Config validation
@@ -213,71 +197,41 @@ def load_sprint_trend(project_key: str, last_n_sprints: int) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------
-# Constants
+# Plotly theme - base layout WITHOUT xaxis/yaxis (to avoid conflicts)
 # ------------------------------------------------------------------
 
-PLOTLY_LAYOUT = dict(
-    plot_bgcolor="#fff", paper_bgcolor="#fff",
+PLOTLY_BASE = dict(
+    plot_bgcolor="#fff",
+    paper_bgcolor="#fff",
     font=dict(family="Inter, sans-serif", color="#18181b", size=12),
     margin=dict(l=10, r=20, t=40, b=20),
-    xaxis=dict(gridcolor="#f3f4f6", linecolor="#e5e7eb", tickfont=dict(color="#71717a")),
-    yaxis=dict(gridcolor="#f3f4f6", linecolor="#e5e7eb", tickfont=dict(color="#71717a"), rangemode="tozero"),
 )
+
 COLOR_PRIMARY = "#f97316"
 
 
 # ------------------------------------------------------------------
-# Sidebar — Collapsible Product Navigation
+# Sidebar — Product Navigation
 # ------------------------------------------------------------------
 
 with st.sidebar:
-    is_expanded = st.session_state.sidebar_expanded
+    st.markdown("## 🐛 Sprint Quality")
+    st.markdown("---")
+    st.markdown("**PRODUTOS**")
     
-    # Toggle button at top
-    toggle_label = "« Minimizar" if is_expanded else "»"
-    if st.button(toggle_label, key="toggle_sidebar", use_container_width=True):
-        st.session_state.sidebar_expanded = not st.session_state.sidebar_expanded
-        st.rerun()
-    
-    if is_expanded:
-        st.markdown("## 🐛 Sprint Quality")
-        st.markdown("---")
-        st.markdown("**PRODUTOS**")
-    else:
-        st.markdown("🐛")
-        st.markdown("---")
-    
-    # Product menu
     for key, name in PROJECTS.items():
         icon = PRODUCT_ICONS.get(key, "📁")
         is_active = st.session_state.selected_project == key
         
-        if is_expanded:
-            # Full label with icon and name
-            label = f"{icon} {name}"
-        else:
-            # Icon only
-            label = icon
-        
-        # Style active item differently
         if is_active:
-            if is_expanded:
-                st.markdown(f"""
-                <div style="background: #fff7ed; border-left: 3px solid #f97316; 
-                            border-radius: 0 6px 6px 0; padding: 10px 12px; margin: 4px 0;">
-                    <span style="color: #f97316; font-weight: 600;">{label}</span>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                <div style="background: #fff7ed; border-radius: 6px; padding: 8px; 
-                            margin: 4px 0; text-align: center; border: 2px solid #f97316;">
-                    <span style="font-size: 1.2rem;">{icon}</span>
-                </div>
-                """, unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="background: #fff7ed; border-left: 3px solid #f97316; 
+                        border-radius: 0 6px 6px 0; padding: 10px 12px; margin: 4px 0;">
+                <span style="color: #f97316; font-weight: 600;">{icon} {name}</span>
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            if st.button(label, key=f"menu_{key}", use_container_width=True, 
-                        help=name if not is_expanded else None):
+            if st.button(f"{icon} {name}", key=f"menu_{key}", use_container_width=True):
                 st.session_state.selected_project = key
                 st.session_state.selected_sprint_id = None
                 st.session_state.selected_sprint_name = ""
@@ -285,22 +239,14 @@ with st.sidebar:
     
     st.markdown("---")
     
-    # Refresh button
-    if is_expanded:
-        if st.button("🔄 Atualizar dados", use_container_width=True):
-            load_sprints.clear()
-            load_issues.clear()
-            load_sprint_trend.clear()
-            clear_cache()
-            st.rerun()
-        st.caption("Cache: 30 min")
-    else:
-        if st.button("🔄", key="refresh_mini", use_container_width=True, help="Atualizar dados"):
-            load_sprints.clear()
-            load_issues.clear()
-            load_sprint_trend.clear()
-            clear_cache()
-            st.rerun()
+    if st.button("🔄 Atualizar dados", use_container_width=True):
+        load_sprints.clear()
+        load_issues.clear()
+        load_sprint_trend.clear()
+        clear_cache()
+        st.rerun()
+    
+    st.caption("Cache: 30 min")
 
 
 # ------------------------------------------------------------------
@@ -483,19 +429,31 @@ else:
 
     with col_bars:
         max_bugs = card_rank["sub_bug_count"].max()
-        colors = [f"rgba(249, {max(115, 200 - int((v / max_bugs) * 85))}, {max(22, 80 - int((v / max_bugs) * 58))}, 0.9)" for v in card_rank["sub_bug_count"]]
+        colors = [
+            f"rgba(249, {max(115, 200 - int((v / max_bugs) * 85))}, {max(22, 80 - int((v / max_bugs) * 58))}, 0.9)" 
+            for v in card_rank["sub_bug_count"]
+        ]
 
         fig_cards = go.Figure(go.Bar(
-            x=card_rank["key"], y=card_rank["sub_bug_count"],
-            marker_color=colors, text=card_rank["sub_bug_count"],
-            textposition="outside", textfont=dict(color="#71717a", size=11),
+            x=card_rank["key"],
+            y=card_rank["sub_bug_count"],
+            marker_color=colors,
+            text=card_rank["sub_bug_count"],
+            textposition="outside",
+            textfont=dict(color="#71717a", size=11),
         ))
+        
+        # FIXED: Apply layout without conflicting xaxis
         fig_cards.update_layout(
             title=dict(text="Top 10 Cards por Sub-bugs", font=dict(size=14)),
-            xaxis_title="Card", yaxis_title="Sub-bugs",
-            **PLOTLY_LAYOUT, height=350,
-            xaxis=dict(tickangle=-30, gridcolor="#f3f4f6", linecolor="#e5e7eb", tickfont=dict(color="#71717a")),
+            xaxis_title="Card",
+            yaxis_title="Sub-bugs",
+            height=350,
+            **PLOTLY_BASE,
         )
+        fig_cards.update_xaxes(tickangle=-30, gridcolor="#f3f4f6", linecolor="#e5e7eb", tickfont=dict(color="#71717a"))
+        fig_cards.update_yaxes(gridcolor="#f3f4f6", linecolor="#e5e7eb", tickfont=dict(color="#71717a"), rangemode="tozero")
+        
         st.plotly_chart(fig_cards, use_container_width=True)
 
     with col_detail:
@@ -596,7 +554,8 @@ with st.expander("📊 Ver tendência", expanded=False):
         fig_trend = go.Figure()
 
         fig_trend.add_trace(go.Scatter(
-            x=x_labels, y=y_values,
+            x=x_labels,
+            y=y_values,
             mode="lines+markers+text",
             name=y_label,
             line=dict(color=COLOR_PRIMARY, width=3),
@@ -613,8 +572,10 @@ with st.expander("📊 Ver tendência", expanded=False):
             trendline_y = [coef[0] * i + coef[1] for i in x_num]
             trend_line_color = "#ef4444" if (is_bug_metric and coef[0] > 0) else "#22c55e"
             fig_trend.add_trace(go.Scatter(
-                x=x_labels, y=trendline_y,
-                mode="lines", name="Tendência",
+                x=x_labels,
+                y=trendline_y,
+                mode="lines",
+                name="Tendência",
                 line=dict(color=trend_line_color, width=2, dash="dash"),
             ))
         except Exception:
@@ -624,18 +585,24 @@ with st.expander("📊 Ver tendência", expanded=False):
         if active_sprints:
             active_y = trend_df[trend_df["sprint_name"].isin(active_sprints)][trend_metric].tolist()
             fig_trend.add_trace(go.Scatter(
-                x=active_sprints, y=active_y,
-                mode="markers", name="Sprint ativa",
+                x=active_sprints,
+                y=active_y,
+                mode="markers",
+                name="Sprint ativa",
                 marker=dict(size=14, color=COLOR_PRIMARY, symbol="star", line=dict(width=2, color="#fff")),
             ))
 
+        # FIXED: Apply layout without conflicting xaxis/yaxis
         fig_trend.update_layout(
-            xaxis_title="Sprint", yaxis_title=y_label,
-            **PLOTLY_LAYOUT, height=380,
-            xaxis=dict(tickangle=-20, gridcolor="#f3f4f6", linecolor="#e5e7eb", tickfont=dict(color="#71717a")),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            xaxis_title="Sprint",
+            yaxis_title=y_label,
+            height=380,
             hovermode="x unified",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            **PLOTLY_BASE,
         )
+        fig_trend.update_xaxes(tickangle=-20, gridcolor="#f3f4f6", linecolor="#e5e7eb", tickfont=dict(color="#71717a"))
+        fig_trend.update_yaxes(gridcolor="#f3f4f6", linecolor="#e5e7eb", tickfont=dict(color="#71717a"), rangemode="tozero")
 
         st.plotly_chart(fig_trend, use_container_width=True)
 
