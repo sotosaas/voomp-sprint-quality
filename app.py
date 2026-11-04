@@ -1,7 +1,7 @@
 """app.py
 
 Sprint Quality Dashboard — Voomp
-Optimized for fast loading with lazy data fetching.
+Redesigned sidebar with product menu and collapsible navigation.
 """
 
 import streamlit as st
@@ -44,29 +44,6 @@ except Exception:
     pass
 
 # ------------------------------------------------------------------
-# Compact CSS
-# ------------------------------------------------------------------
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-:root{--bg:#f9fafb;--card:#fff;--fg:#18181b;--border:#e5e7eb;--muted:#f3f4f6;--muted-fg:#71717a;--orange:#f97316;--radius:.5rem}
-html,body,[class*="st-"]{font-family:'Inter',sans-serif!important}
-.stApp{background:var(--bg)!important}
-[data-testid="metric-container"]{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:var(--radius)!important;padding:1rem 1.25rem!important;box-shadow:0 1px 2px rgba(0,0,0,.05)!important}
-[data-testid="metric-container"] label{color:var(--muted-fg)!important;font-size:.7rem!important;font-weight:600!important;text-transform:uppercase!important;letter-spacing:.04em!important}
-[data-testid="metric-container"] [data-testid="stMetricValue"]{color:var(--fg)!important;font-size:1.5rem!important;font-weight:700!important}
-section[data-testid="stSidebar"]{background:var(--card)!important;border-right:1px solid var(--border)!important}
-[data-testid="stDataFrame"]{border:1px solid var(--border)!important;border-radius:var(--radius)!important;overflow:hidden!important}
-.stButton button{background:var(--orange)!important;color:#fff!important;border:none!important;border-radius:var(--radius)!important;font-weight:600!important}
-.stButton button:hover{background:#ea580c!important}
-h1,h2,h3{font-family:'Inter',sans-serif!important;color:var(--fg)!important}
-#MainMenu,footer,header{visibility:hidden!important}
-@media(max-width:900px){[data-testid="metric-container"]{padding:.75rem!important}[data-testid="metric-container"] [data-testid="stMetricValue"]{font-size:1.25rem!important}}
-</style>
-""", unsafe_allow_html=True)
-
-# ------------------------------------------------------------------
 # Session state
 # ------------------------------------------------------------------
 
@@ -76,6 +53,249 @@ if "selected_sprint_id" not in st.session_state:
     st.session_state.selected_sprint_id = None
 if "selected_sprint_name" not in st.session_state:
     st.session_state.selected_sprint_name = ""
+if "sidebar_collapsed" not in st.session_state:
+    st.session_state.sidebar_collapsed = False
+
+# ------------------------------------------------------------------
+# Product icons mapping
+# ------------------------------------------------------------------
+
+PRODUCT_ICONS = {
+    "VADM": "⚙️",    # Admin
+    "VPLY": "🎮",    # Play
+    "VMPG": "💳",    # Meios de Pagamento
+    "VSUS": "🔧",    # Sustentação
+    "VBEP": "📊",    # Backoffice ERP
+}
+
+# ------------------------------------------------------------------
+# CSS Styling
+# ------------------------------------------------------------------
+
+sidebar_width = "80px" if st.session_state.sidebar_collapsed else "280px"
+
+st.markdown(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {{
+    --bg: #f9fafb;
+    --card: #ffffff;
+    --fg: #18181b;
+    --border: #e5e7eb;
+    --muted: #f3f4f6;
+    --muted-fg: #71717a;
+    --orange: #f97316;
+    --orange-light: #fff7ed;
+    --radius: 0.5rem;
+    --sidebar-width: {sidebar_width};
+}}
+
+html, body, [class*="st-"] {{ font-family: 'Inter', sans-serif !important; }}
+.stApp {{ background: var(--bg) !important; }}
+
+/* Sidebar styling */
+section[data-testid="stSidebar"] {{
+    background: var(--card) !important;
+    border-right: 1px solid var(--border) !important;
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width) !important;
+    max-width: var(--sidebar-width) !important;
+}}
+
+section[data-testid="stSidebar"] > div {{
+    width: var(--sidebar-width) !important;
+    min-width: var(--sidebar-width) !important;
+}}
+
+/* Product menu item */
+.product-menu-item {{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    margin: 4px 8px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    color: var(--fg);
+}}
+
+.product-menu-item:hover {{
+    background: var(--muted);
+}}
+
+.product-menu-item.active {{
+    background: var(--orange-light);
+    color: var(--orange);
+    font-weight: 600;
+}}
+
+.product-menu-item .icon {{
+    font-size: 1.25rem;
+    width: 28px;
+    text-align: center;
+}}
+
+.product-menu-item .label {{
+    font-size: 0.875rem;
+    white-space: nowrap;
+    overflow: hidden;
+}}
+
+/* Collapsed sidebar - icon only */
+.collapsed .product-menu-item {{
+    justify-content: center;
+    padding: 12px 8px;
+}}
+
+.collapsed .product-menu-item .label {{
+    display: none;
+}}
+
+/* Sidebar header */
+.sidebar-header {{
+    padding: 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}}
+
+.sidebar-logo {{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--fg);
+}}
+
+.collapsed .sidebar-logo span {{
+    display: none;
+}}
+
+/* Collapse button */
+.collapse-btn {{
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: var(--muted-fg);
+    transition: all 0.15s;
+}}
+
+.collapse-btn:hover {{
+    background: var(--muted);
+    color: var(--fg);
+}}
+
+/* Menu section */
+.menu-section {{
+    padding: 16px 0;
+}}
+
+.menu-section-title {{
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted-fg);
+    padding: 8px 24px;
+    margin-bottom: 4px;
+}}
+
+.collapsed .menu-section-title {{
+    display: none;
+}}
+
+/* Footer actions */
+.sidebar-footer {{
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    background: var(--card);
+}}
+
+/* Metric cards */
+[data-testid="metric-container"] {{
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    padding: 1rem 1.25rem !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05) !important;
+}}
+
+[data-testid="metric-container"] label {{
+    color: var(--muted-fg) !important;
+    font-size: .7rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+}}
+
+[data-testid="metric-container"] [data-testid="stMetricValue"] {{
+    color: var(--fg) !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+}}
+
+/* DataFrames */
+[data-testid="stDataFrame"] {{
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    overflow: hidden !important;
+}}
+
+/* Buttons */
+.stButton button {{
+    background: var(--orange) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius) !important;
+    font-weight: 600 !important;
+}}
+
+.stButton button:hover {{
+    background: #ea580c !important;
+}}
+
+/* Secondary button style */
+.stButton button[kind="secondary"] {{
+    background: var(--card) !important;
+    color: var(--fg) !important;
+    border: 1px solid var(--border) !important;
+}}
+
+/* Sprint filter card */
+.sprint-filter-card {{
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}}
+
+/* Headers */
+h1, h2, h3 {{ font-family: 'Inter', sans-serif !important; color: var(--fg) !important; }}
+
+/* Hide Streamlit branding */
+#MainMenu, footer, header {{ visibility: hidden !important; }}
+
+@media(max-width:900px) {{
+    [data-testid="metric-container"] {{ padding: .75rem !important; }}
+    [data-testid="metric-container"] [data-testid="stMetricValue"] {{ font-size: 1.25rem !important; }}
+}}
+</style>
+""", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
 # Config validation
@@ -89,10 +309,10 @@ if errors:
     st.stop()
 
 # ------------------------------------------------------------------
-# Cached loaders — fast TTL, minimal spinners
+# Cached loaders
 # ------------------------------------------------------------------
 
-@st.cache_data(ttl=1800, show_spinner=False)  # 30 min cache
+@st.cache_data(ttl=1800, show_spinner=False)
 def load_sprints(project_key: str) -> list[dict]:
     """Fetch sprint list for the current year."""
     client = JiraClient()
@@ -107,7 +327,7 @@ def load_sprints(project_key: str) -> list[dict]:
     )))
 
 
-@st.cache_data(ttl=1800, show_spinner=False)  # 30 min cache
+@st.cache_data(ttl=1800, show_spinner=False)
 def load_issues(project_key: str, sprint_id: int, sprint_name: str) -> pd.DataFrame:
     """Fetch sprint issues."""
     df = build_issues_dataframe(project_key, sprint_id, sprint_name)
@@ -116,7 +336,7 @@ def load_issues(project_key: str, sprint_id: int, sprint_name: str) -> pd.DataFr
     return df
 
 
-@st.cache_data(ttl=1800, show_spinner=False)  # 30 min cache
+@st.cache_data(ttl=1800, show_spinner=False)
 def load_sprint_trend(project_key: str, last_n_sprints: int) -> pd.DataFrame:
     """Fetch trend data with parallel loading."""
     return get_sprint_trend(project_key, last_n_sprints=last_n_sprints)
@@ -137,70 +357,133 @@ COLOR_PRIMARY = "#f97316"
 
 
 # ------------------------------------------------------------------
-# Sidebar
+# Sidebar — Product Navigation Menu
 # ------------------------------------------------------------------
 
 with st.sidebar:
-    st.markdown("## 🐛 Sprint Quality")
+    # Header with collapse button
+    col_logo, col_btn = st.columns([3, 1] if not st.session_state.sidebar_collapsed else [1, 1])
+    
+    with col_logo:
+        if st.session_state.sidebar_collapsed:
+            st.markdown("🐛")
+        else:
+            st.markdown("## 🐛 Sprint Quality")
+    
+    with col_btn:
+        collapse_icon = "→" if st.session_state.sidebar_collapsed else "←"
+        if st.button(collapse_icon, key="collapse_btn", help="Colapsar/Expandir menu"):
+            st.session_state.sidebar_collapsed = not st.session_state.sidebar_collapsed
+            st.rerun()
+    
     st.markdown("---")
-
-    project_options = list(PROJECTS.keys())
-    project_labels = [PROJECTS[k] for k in project_options]
-
-    selected_idx = project_options.index(st.session_state.selected_project)
-    chosen_label = st.selectbox("Produto", options=project_labels, index=selected_idx, key="sidebar_product")
-    chosen_key = project_options[project_labels.index(chosen_label)]
-
-    if chosen_key != st.session_state.selected_project:
-        st.session_state.selected_project = chosen_key
-        st.session_state.selected_sprint_id = None
-        st.session_state.selected_sprint_name = ""
-
-    # Sprint selector — fast load from cache
-    sprints = load_sprints(chosen_key)
-
-    if not sprints:
-        st.warning(f"Nenhuma sprint encontrada para {chosen_label}.")
-        st.stop()
-
-    sprint_labels = [s["name"] for s in sprints]
-    sprint_ids = [s["id"] for s in sprints]
-
-    default_idx = 0
-    if st.session_state.selected_sprint_id in sprint_ids:
-        default_idx = sprint_ids.index(st.session_state.selected_sprint_id)
-
-    chosen_sprint_label = st.selectbox("Sprint", options=sprint_labels, index=default_idx, key="sidebar_sprint")
-    chosen_sprint_idx = sprint_labels.index(chosen_sprint_label)
-    chosen_sprint_id = sprint_ids[chosen_sprint_idx]
-    chosen_sprint = sprints[chosen_sprint_idx]
-
-    st.session_state.selected_sprint_id = chosen_sprint_id
-    st.session_state.selected_sprint_name = chosen_sprint_label
-
-    state = chosen_sprint.get("state", "")
-    st.caption(f"Status: {'🟢 Ativa' if state == 'active' else '✅ Fechada'}")
-
+    
+    # Product menu
+    if not st.session_state.sidebar_collapsed:
+        st.markdown("##### PRODUTOS")
+    
+    for key, name in PROJECTS.items():
+        icon = PRODUCT_ICONS.get(key, "📁")
+        is_active = st.session_state.selected_project == key
+        
+        # Use columns to create menu item layout
+        if st.session_state.sidebar_collapsed:
+            # Icon only mode
+            btn_label = icon
+            help_text = name
+        else:
+            # Full mode with icon and name
+            btn_label = f"{icon}  {name}"
+            help_text = None
+        
+        # Style the button based on active state
+        if is_active:
+            st.markdown(f"""
+            <div style="background: #fff7ed; border-radius: 8px; padding: 8px 12px; margin: 4px 0; border-left: 3px solid #f97316;">
+                <span style="font-weight: 600; color: #f97316;">{btn_label}</span>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            if st.button(btn_label, key=f"menu_{key}", use_container_width=True, help=help_text):
+                st.session_state.selected_project = key
+                st.session_state.selected_sprint_id = None
+                st.session_state.selected_sprint_name = ""
+                st.rerun()
+    
     st.markdown("---")
+    
+    # Actions at bottom
+    if not st.session_state.sidebar_collapsed:
+        if st.button("🔄 Atualizar dados", use_container_width=True):
+            load_sprints.clear()
+            load_issues.clear()
+            load_sprint_trend.clear()
+            clear_cache()
+            st.rerun()
+        
+        st.caption("Cache: 30 min")
+    else:
+        if st.button("🔄", key="refresh_collapsed", help="Atualizar dados"):
+            load_sprints.clear()
+            load_issues.clear()
+            load_sprint_trend.clear()
+            clear_cache()
+            st.rerun()
 
-    if st.button("🔄 Atualizar dados", use_container_width=True):
-        load_sprints.clear()
-        load_issues.clear()
-        load_sprint_trend.clear()
-        clear_cache()
-        st.rerun()
-
-    st.caption("Cache: 30 min")
 
 # ------------------------------------------------------------------
 # Main content
 # ------------------------------------------------------------------
 
-st.markdown(f"# {PROJECTS[chosen_key]}")
-st.markdown(f"**Sprint:** {chosen_sprint_label}")
+chosen_key = st.session_state.selected_project
+product_name = PROJECTS[chosen_key]
+product_icon = PRODUCT_ICONS.get(chosen_key, "📁")
+
+# Header
+st.markdown(f"# {product_icon} {product_name}")
+
+# Sprint filter bar (moved from sidebar)
+sprints = load_sprints(chosen_key)
+
+if not sprints:
+    st.warning(f"Nenhuma sprint encontrada para {product_name}.")
+    st.stop()
+
+sprint_labels = [s["name"] for s in sprints]
+sprint_ids = [s["id"] for s in sprints]
+
+# Default to most recent sprint
+default_idx = 0
+if st.session_state.selected_sprint_id in sprint_ids:
+    default_idx = sprint_ids.index(st.session_state.selected_sprint_id)
+
+# Sprint filter in main content area
+col_sprint, col_status, col_spacer = st.columns([3, 1, 4])
+
+with col_sprint:
+    chosen_sprint_label = st.selectbox(
+        "📅 Sprint",
+        options=sprint_labels,
+        index=default_idx,
+        key="main_sprint_selector",
+        label_visibility="collapsed",
+    )
+
+chosen_sprint_idx = sprint_labels.index(chosen_sprint_label)
+chosen_sprint_id = sprint_ids[chosen_sprint_idx]
+chosen_sprint = sprints[chosen_sprint_idx]
+
+st.session_state.selected_sprint_id = chosen_sprint_id
+st.session_state.selected_sprint_name = chosen_sprint_label
+
+with col_status:
+    state = chosen_sprint.get("state", "")
+    status_badge = "🟢 Ativa" if state == "active" else "✅ Fechada"
+    st.markdown(f"**{status_badge}**")
+
 st.markdown("---")
 
-# Load issues — shows spinner only if cache miss
+# Load issues
 try:
     df = load_issues(chosen_key, chosen_sprint_id, chosen_sprint_label)
 except JiraAuthError as e:
@@ -377,13 +660,13 @@ else:
         c2.metric("🟠 1–2 bugs", b2)
 
 # ------------------------------------------------------------------
-# Trend chart — lazy loaded via expander
+# Trend chart
 # ------------------------------------------------------------------
 
 st.markdown("---")
 st.markdown("### 📈 Tendência de Qualidade por Sprint")
 
-with st.expander("📊 Clique para ver a tendência (pode demorar no primeiro carregamento)", expanded=False):
+with st.expander("📊 Ver tendência (pode demorar no primeiro carregamento)", expanded=False):
     col_ctrl1, col_ctrl2, _ = st.columns([1, 1, 4])
     with col_ctrl1:
         n_sprints = st.slider("Nº de sprints", min_value=2, max_value=10, value=5, step=1)
