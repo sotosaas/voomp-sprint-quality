@@ -1,7 +1,7 @@
 """app.py
 
 Sprint Quality Dashboard — Voomp
-Collapsible sidebar with icon-only mode when minimized.
+Professional sidebar design following Greenn/Voomp design patterns.
 """
 
 import streamlit as st
@@ -31,11 +31,17 @@ st.set_page_config(
 )
 
 # ------------------------------------------------------------------
-# Session state for sidebar collapse
+# Session state
 # ------------------------------------------------------------------
 
 if "sidebar_collapsed" not in st.session_state:
     st.session_state.sidebar_collapsed = False
+if "selected_project" not in st.session_state:
+    st.session_state.selected_project = list(PROJECTS.keys())[0]
+if "selected_sprint_id" not in st.session_state:
+    st.session_state.selected_sprint_id = None
+if "selected_sprint_name" not in st.session_state:
+    st.session_state.selected_sprint_name = ""
 
 # ------------------------------------------------------------------
 # Inject secrets (Streamlit Cloud)
@@ -51,240 +57,241 @@ except Exception:
     pass
 
 # ------------------------------------------------------------------
-# CSS Styling - Clean professional design like reference
+# CSS Styling - Greenn/Voomp design system
 # ------------------------------------------------------------------
 
-sidebar_width = "60px" if st.session_state.sidebar_collapsed else "260px"
-
-st.markdown(f"""
+st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root {{
+/* === Variables === */
+:root {
+    --primary: #002363;
+    --primary-light: #2A63AB;
     --bg: #f9fafb;
     --card: #ffffff;
-    --fg: #18181b;
-    --fg-secondary: #52525b;
-    --border: #e5e7eb;
-    --muted: #f3f4f6;
-    --muted-fg: #71717a;
+    --fg: #333333;
+    --fg-secondary: #81858e;
+    --border: #ededf0;
     --orange: #f97316;
-    --orange-light: #fff7ed;
-    --radius: 0.5rem;
-}}
+    --radius: 5px;
+}
 
-html, body, [class*="st-"] {{ font-family: 'Inter', sans-serif !important; }}
-.stApp {{ background: var(--bg) !important; }}
+html, body, [class*="st-"] { 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important; 
+}
 
-/* Sidebar */
-section[data-testid="stSidebar"] {{
-    background: var(--card) !important;
+.stApp { 
+    background: var(--bg) !important; 
+}
+
+/* === Sidebar - Greenn style === */
+section[data-testid="stSidebar"] {
+    background: #ffffff !important;
     border-right: 1px solid var(--border) !important;
-    width: {sidebar_width} !important;
-    min-width: {sidebar_width} !important;
-}}
+    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
 
-section[data-testid="stSidebar"] > div {{
-    width: {sidebar_width} !important;
-    padding-top: 1rem !important;
-}}
+section[data-testid="stSidebar"] > div {
+    padding-top: 20px !important;
+    padding-left: 20px !important;
+    padding-right: 20px !important;
+}
 
-/* Hide default sidebar toggle */
-button[kind="header"] {{
-    display: none !important;
-}}
-
-/* Menu item style - clean like reference */
-.menu-item {{
+/* Menu item link style - matches Greenn */
+.menu-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    margin: 2px 8px;
-    border-radius: 8px;
+    padding: 10px 0;
     cursor: pointer;
-    transition: all 0.15s ease;
+    color: var(--fg);
+    font-weight: 600;
+    font-size: 15px;
     text-decoration: none;
-    color: var(--fg-secondary);
-    font-size: 14px;
-    font-weight: 500;
-}}
+    transition: all 0.3s ease;
+    position: relative;
+}
 
-.menu-item:hover {{
-    background: var(--muted);
-}}
+.menu-item:hover {
+    color: var(--primary);
+}
 
-.menu-item.active {{
-    color: var(--orange);
-}}
+.menu-item.active {
+    color: var(--primary) !important;
+}
 
-.menu-item.active svg {{
-    stroke: var(--orange);
-}}
-
-.menu-item svg {{
-    flex-shrink: 0;
-    stroke: var(--fg-secondary);
-}}
-
-/* Hamburger toggle button */
-.hamburger-btn {{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    margin: 8px auto 16px auto;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: background 0.15s ease;
-}}
-
-.hamburger-btn:hover {{
-    background: var(--muted);
-}}
-
-.hamburger-icon {{
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}}
-
-.hamburger-icon span {{
+.menu-item.active::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    background: var(--primary);
+    border-radius: 50%;
     display: block;
-    width: 20px;
-    height: 2px;
-    background: var(--fg);
-    border-radius: 1px;
-}}
+    position: absolute;
+    left: -20px;
+}
 
-/* Collapsed mode icon button */
-.icon-only-btn {{
+.menu-item svg {
+    margin-right: 40px;
+    color: var(--fg-secondary);
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.menu-item:hover svg,
+.menu-item.active svg {
+    color: var(--primary);
+}
+
+/* Sidebar button overrides */
+section[data-testid="stSidebar"] .stButton button {
+    background: transparent !important;
+    color: var(--fg) !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+    padding: 10px 0 !important;
+    transition: all 0.3s ease !important;
+}
+
+section[data-testid="stSidebar"] .stButton button:hover {
+    background: transparent !important;
+    color: var(--primary) !important;
+}
+
+/* Toggle menu button */
+.menu-toggle {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    margin: 4px auto;
-    border-radius: 10px;
+    gap: 10px;
+    padding: 15px 0;
     cursor: pointer;
-    transition: all 0.15s ease;
-    color: var(--fg-secondary);
-}}
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--fg);
+}
 
-.icon-only-btn:hover {{
-    background: var(--muted);
-}}
+.menu-toggle svg {
+    width: 21px;
+    height: 15px;
+}
 
-.icon-only-btn.active {{
-    color: var(--orange);
-    background: var(--orange-light);
-}}
-
-.icon-only-btn svg {{
-    stroke: currentColor;
-}}
-
-/* Metric cards */
-[data-testid="metric-container"] {{
+/* === Metric cards === */
+[data-testid="metric-container"] {
     background: var(--card) !important;
     border: 1px solid var(--border) !important;
     border-radius: var(--radius) !important;
     padding: 1rem 1.25rem !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,.05) !important;
-}}
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
 
-[data-testid="metric-container"] label {{
-    color: var(--muted-fg) !important;
+[data-testid="metric-container"] label {
+    color: var(--fg-secondary) !important;
     font-size: .7rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
     letter-spacing: .04em !important;
-}}
+}
 
-[data-testid="metric-container"] [data-testid="stMetricValue"] {{
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
     color: var(--fg) !important;
     font-size: 1.5rem !important;
     font-weight: 700 !important;
-}}
+}
 
-/* DataFrames */
-[data-testid="stDataFrame"] {{
+/* === DataFrames === */
+[data-testid="stDataFrame"] {
     border: 1px solid var(--border) !important;
     border-radius: var(--radius) !important;
     overflow: hidden !important;
-}}
+}
 
-/* Override Streamlit button styles in sidebar */
-section[data-testid="stSidebar"] .stButton button {{
-    background: transparent !important;
-    color: var(--fg-secondary) !important;
-    border: none !important;
-    box-shadow: none !important;
-    font-weight: 500 !important;
-    justify-content: flex-start !important;
-    padding: 12px 16px !important;
-}}
-
-section[data-testid="stSidebar"] .stButton button:hover {{
-    background: var(--muted) !important;
-    color: var(--fg) !important;
-}}
-
-/* Primary buttons (main content) */
-.stApp > section > div .stButton button {{
+/* === Primary buttons (main content) === */
+.stApp .main .stButton button {
     background: var(--orange) !important;
     color: #fff !important;
     border: none !important;
     border-radius: var(--radius) !important;
     font-weight: 600 !important;
-}}
+}
 
-.stApp > section > div .stButton button:hover {{
+.stApp .main .stButton button:hover {
     background: #ea580c !important;
-}}
+}
 
-/* Headers */
-h1, h2, h3 {{ font-family: 'Inter', sans-serif !important; color: var(--fg) !important; }}
+/* === Headers === */
+h1, h2, h3 { 
+    font-family: 'Inter', sans-serif !important; 
+    color: var(--fg) !important; 
+}
 
-/* Hide Streamlit branding */
-#MainMenu, footer, header {{ visibility: hidden !important; }}
+/* === Hide Streamlit branding === */
+#MainMenu, footer, header { 
+    visibility: hidden !important; 
+}
 
-@media(max-width:900px) {{
-    [data-testid="metric-container"] {{ padding: .75rem !important; }}
-    [data-testid="metric-container"] [data-testid="stMetricValue"] {{ font-size: 1.25rem !important; }}
-}}
+/* === Responsive === */
+@media(max-width:900px) {
+    [data-testid="metric-container"] { padding: .75rem !important; }
+    [data-testid="metric-container"] [data-testid="stMetricValue"] { font-size: 1.25rem !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
-# Session state
+# SVG Icons - Greenn/Voomp style (stroke-based, 21x21)
 # ------------------------------------------------------------------
 
-if "selected_project" not in st.session_state:
-    st.session_state.selected_project = list(PROJECTS.keys())[0]
-if "selected_sprint_id" not in st.session_state:
-    st.session_state.selected_sprint_id = None
-if "selected_sprint_name" not in st.session_state:
-    st.session_state.selected_sprint_name = ""
+# Menu hamburguer icon (3 lines)
+ICON_MENU = '''<svg width="21" height="15" viewBox="0 0 21 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M1 7.5H20M1 1.5H20M1 13.5H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>'''
 
-# ------------------------------------------------------------------
-# Product icons mapping - SVG line icons (professional style)
-# ------------------------------------------------------------------
+# Dashboard icon
+ICON_DASHBOARD = '''<svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M1.5 7.5H19.5M7.5 19.5V7.5M3.5 1.5H17.5C18.6 1.5 19.5 2.4 19.5 3.5V17.5C19.5 18.6 18.6 19.5 17.5 19.5H3.5C2.4 19.5 1.5 18.6 1.5 17.5V3.5C1.5 2.4 2.4 1.5 3.5 1.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>'''
 
-# SVG icons inline - clean line style like the reference image
-PRODUCT_SVG_ICONS = {
-    "VADM": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>''',
-    "VPLY": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>''',
-    "VMPG": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>''',
-    "VSUS": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>''',
-    "VBEP": '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>''',
+# Play icon
+ICON_PLAY = '''<svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M5.5 3.5L17.5 10.5L5.5 17.5V3.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>'''
+
+# Card/Payment icon
+ICON_CARD = '''<svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M1.5 8.5H19.5M3.5 3.5H17.5C18.6 3.5 19.5 4.4 19.5 5.5V15.5C19.5 16.6 18.6 17.5 17.5 17.5H3.5C2.4 17.5 1.5 16.6 1.5 15.5V5.5C1.5 4.4 2.4 3.5 3.5 3.5Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>'''
+
+# Settings/Wrench icon
+ICON_SETTINGS = '''<svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M13.5 6.5L17.5 2.5M19 4L17.5 2.5M17.5 2.5L15.5 4.5L17.5 2.5ZM10 8C10 8 8.5 6.5 6.5 6.5C4.5 6.5 2.5 8.5 2.5 10.5C2.5 12.5 4.5 14.5 6.5 14.5C8.5 14.5 10 13 10 13L14.5 17.5C15 18 15.7 18.3 16.5 18.3C18 18.3 19.3 17 19.3 15.5C19.3 14.7 19 14 18.5 13.5L14 9C14 9 15.5 7.5 15.5 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>'''
+
+# Chart/Report icon
+ICON_CHART = '''<svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M17.5 17.5V7.5M10.5 17.5V3.5M3.5 17.5V11.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>'''
+
+# Refresh icon
+ICON_REFRESH = '''<svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M1.5 3.5V8.5H6.5M19.5 17.5V12.5H14.5M17.5 7.5C16.9 5.8 15.8 4.3 14.3 3.3C12.8 2.3 11 1.8 9.2 2C5.4 2.4 2.3 5.5 2 9.3M3.5 13.5C4.1 15.2 5.2 16.7 6.7 17.7C8.2 18.7 10 19.2 11.8 19C15.6 18.6 18.7 15.5 19 11.7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>'''
+
+# Product icons mapping
+PRODUCT_ICONS = {
+    "VADM": ICON_DASHBOARD,
+    "VPLY": ICON_PLAY,
+    "VMPG": ICON_CARD,
+    "VSUS": ICON_SETTINGS,
+    "VBEP": ICON_CHART,
 }
 
-# Emoji fallback for main content title
-PRODUCT_ICONS = {
+# Emoji fallback for main content header
+PRODUCT_EMOJI = {
     "VADM": "⚙️",
     "VPLY": "▶️",
     "VMPG": "💳",
@@ -352,87 +359,68 @@ COLOR_PRIMARY = "#f97316"
 
 
 # ------------------------------------------------------------------
-# Sidebar — Clean professional navigation like reference
+# Sidebar — Greenn/Voomp style navigation
 # ------------------------------------------------------------------
 
-# Hamburger icon SVG
-HAMBURGER_SVG = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>'''
-
-REFRESH_SVG = '''<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'''
-
 with st.sidebar:
-    # Toggle button (hamburger)
-    if st.button("≡", key="toggle_sidebar", help="Expandir/Recolher menu"):
-        st.session_state.sidebar_collapsed = not st.session_state.sidebar_collapsed
-        st.rerun()
+    # Logo
+    st.markdown("""
+    <div style="display: flex; align-items: center; margin-bottom: 20px; padding: 10px 0;">
+        <span style="font-size: 24px; margin-right: 10px;">🐛</span>
+        <span style="font-weight: 700; font-size: 16px; color: #333;">Sprint Quality</span>
+    </div>
+    """, unsafe_allow_html=True)
     
-    if st.session_state.sidebar_collapsed:
-        # COLLAPSED MODE: Icons only centered
-        st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
+    # Menu items - following Greenn pattern
+    for key, name in PROJECTS.items():
+        is_active = st.session_state.selected_project == key
+        icon_svg = PRODUCT_ICONS.get(key, ICON_DASHBOARD)
         
-        for key, name in PROJECTS.items():
-            is_active = st.session_state.selected_project == key
-            svg_icon = PRODUCT_SVG_ICONS.get(key, PRODUCT_SVG_ICONS["VADM"])
-            active_class = "active" if is_active else ""
-            
-            st.markdown(f'''
-            <div class="icon-only-btn {active_class}" title="{name}" onclick="document.getElementById('btn_{key}').click()">
-                {svg_icon}
-            </div>
-            ''', unsafe_allow_html=True)
-            
-            # Hidden button for click handling
-            if st.button("​", key=f"icon_{key}", help=name):  # Zero-width space
+        # Color the icon based on active state
+        icon_color = "#002363" if is_active else "#81858e"
+        colored_icon = icon_svg.replace('stroke="currentColor"', f'stroke="{icon_color}"')
+        
+        # Active indicator dot
+        active_dot = '<span style="width: 7px; height: 7px; background: #002363; border-radius: 50%; position: absolute; left: -15px;"></span>' if is_active else ''
+        
+        # Render menu item as HTML
+        text_color = "#002363" if is_active else "#333"
+        st.markdown(f'''
+        <div class="menu-item {'active' if is_active else ''}" style="position: relative; display: flex; align-items: center; padding: 12px 0; color: {text_color}; font-weight: 600; font-size: 15px;">
+            {active_dot}
+            <span style="margin-right: 35px; display: flex; color: {icon_color};">{colored_icon}</span>
+            <span>{name}</span>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        # Hidden button for click handling
+        if not is_active:
+            if st.button(f"Selecionar {name}", key=f"menu_{key}", label_visibility="collapsed"):
                 st.session_state.selected_project = key
                 st.session_state.selected_sprint_id = None
                 st.session_state.selected_sprint_name = ""
                 st.rerun()
-        
-        st.markdown("<div style='height: 20px'></div>", unsafe_allow_html=True)
-        
-        # Refresh icon
-        if st.button("↻", key="refresh_collapsed", help="Atualizar dados"):
-            load_sprints.clear()
-            load_issues.clear()
-            load_sprint_trend.clear()
-            clear_cache()
-            st.rerun()
     
-    else:
-        # EXPANDED MODE: Full menu with SVG icons
-        st.markdown("<div style='height: 10px'></div>", unsafe_allow_html=True)
-        
-        for key, name in PROJECTS.items():
-            is_active = st.session_state.selected_project == key
-            svg_icon = PRODUCT_SVG_ICONS.get(key, PRODUCT_SVG_ICONS["VADM"])
-            
-            if is_active:
-                # Active item with orange color
-                st.markdown(f'''
-                <div class="menu-item active">
-                    <span style="color: #f97316;">{svg_icon.replace('stroke="currentColor"', 'stroke="#f97316"')}</span>
-                    <span>{name}</span>
-                </div>
-                ''', unsafe_allow_html=True)
-            else:
-                # Clickable button for inactive items
-                if st.button(f"      {name}", key=f"menu_{key}", use_container_width=True):
-                    st.session_state.selected_project = key
-                    st.session_state.selected_sprint_id = None
-                    st.session_state.selected_sprint_name = ""
-                    st.rerun()
-        
-        st.markdown("<div style='height: 30px'></div>", unsafe_allow_html=True)
-        st.markdown("---")
-        
-        if st.button("↻  Atualizar dados", key="refresh_expanded", use_container_width=True):
-            load_sprints.clear()
-            load_issues.clear()
-            load_sprint_trend.clear()
-            clear_cache()
-            st.rerun()
-        
-        st.caption("Cache: 30 min")
+    st.markdown("<div style='height: 30px'></div>", unsafe_allow_html=True)
+    st.markdown("---")
+    
+    # Refresh button
+    refresh_icon = ICON_REFRESH.replace('stroke="currentColor"', 'stroke="#81858e"')
+    st.markdown(f'''
+    <div style="display: flex; align-items: center; padding: 10px 0; color: #333; font-weight: 600; font-size: 14px;">
+        <span style="margin-right: 35px; display: flex; color: #81858e;">{refresh_icon}</span>
+        <span>Atualizar dados</span>
+    </div>
+    ''', unsafe_allow_html=True)
+    
+    if st.button("Atualizar", key="refresh_btn", label_visibility="collapsed"):
+        load_sprints.clear()
+        load_issues.clear()
+        load_sprint_trend.clear()
+        clear_cache()
+        st.rerun()
+    
+    st.caption("Cache: 30 min")
 
 
 # ------------------------------------------------------------------
@@ -441,10 +429,10 @@ with st.sidebar:
 
 chosen_key = st.session_state.selected_project
 product_name = PROJECTS[chosen_key]
-product_icon = PRODUCT_ICONS.get(chosen_key, "📁")
+product_emoji = PRODUCT_EMOJI.get(chosen_key, "📁")
 
 # Header
-st.markdown(f"# {product_icon} {product_name}")
+st.markdown(f"# {product_emoji} {product_name}")
 
 # Load sprints
 sprints = load_sprints(chosen_key)
