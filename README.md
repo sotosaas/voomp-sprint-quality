@@ -1,136 +1,127 @@
-# Voomp Sprint Quality Dashboard
+# Sprint Quality Dashboard — Voomp
 
-Dashboard local para acompanhar a qualidade das entregas de sprint por produto,
-integrado ao Jira Cloud via API Token pessoal.
+Dashboard para rastreamento de qualidade de entrega por sprint, identificando cards com sub-bugs e ranking de desenvolvedores.
 
----
+🚀 **Deploy:** [sprintquality.streamlit.app](https://sprintquality.streamlit.app)
 
-## Funcionalidades
-
-| Página | O que mostra |
-|--------|-------------|
-| **Sprint Analysis** | Filtro por produto e sprint · KPIs · tabela de cards · ranking de devs · cards com mais bugs · tendência por sprint |
-| **Visão Geral** | Resumo dos últimos 30 dias de todos os produtos side-by-side · ranking geral de qualidade |
-
----
-
-## Requisitos
-
-- Python 3.11+
-- Acesso ao Jira Cloud da Cogna com um API Token pessoal
-
----
-
-## Instalação
-
-```powershell
-# 1. Entre na pasta do projeto
-cd "C:\Users\matheus.soto\Desktop\Voomp-Workspace\voomp-sprint-quality"
-
-# 2. Crie e ative o ambiente virtual
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-```
-
-> **Nota:** Se o PowerShell bloquear a ativação do venv com erro de política de execução,
-> use sempre o Python do venv diretamente: `.\.venv\Scripts\python.exe`
-
----
-
-## Configuração
-
-```powershell
-copy .env.example .env
-# Edite o .env com suas credenciais
-```
-
-Conteúdo do `.env`:
-
-```env
-JIRA_URL=https://cogna.atlassian.net
-JIRA_EMAIL=seu.email@cogna.com.br
-JIRA_API_TOKEN=seu_token_aqui
-```
-
-Gere seu token em: https://id.atlassian.com/manage-profile/security/api-tokens
-
----
-
-## Rodando
-
-```powershell
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
-
-Acesse em: **http://localhost:8501**
-
----
-
-## Testando a conexão com o Jira
-
-```powershell
-.\.venv\Scripts\python.exe jira_client.py
-```
-
-Saída esperada:
-
-```
-✅ Conectado como: Seu Nome (seu.email@cogna.com.br)
-
-Chave  Nome no Jira                             Produto (config)
-----------------------------------------------------------------------
-  VADM  ...                                      Admin  ✅
-  VPLY  ...                                      Play  ✅
-  VMPG  ...                                      Meios de Pagamento  ✅
-  VSUS  ...                                      Sustentação  ✅
-  VBEP  ...                                      Backoffice ERP  ✅
-```
-
----
-
-## Projetos configurados
-
-| Chave | Produto | Cor |
-|-------|---------|-----|
-| VADM  | Admin | 🔵 |
-| VPLY  | Play | 🟢 |
-| VMPG  | Meios de Pagamento | 🩷 |
-| VSUS  | Sustentação | 🟠 |
-| VBEP  | Backoffice ERP | 🟣 |
-
----
-
-## Estrutura do projeto
+## Arquitetura
 
 ```
 voomp-sprint-quality/
-├── .env                    # Suas credenciais (não versionar)
-├── .env.example            # Template de credenciais
-├── .gitignore
+├── app.py                      # Entry point (minimal)
+├── src/
+│   ├── config.py               # Configuration with dataclasses
+│   ├── models/                 # Domain models (pure data)
+│   │   ├── issue.py            # Issue, SubBug
+│   │   ├── sprint.py           # Sprint
+│   │   └── metrics.py          # DevMetrics, SprintMetrics, etc.
+│   ├── services/               # Business logic
+│   │   ├── jira_api.py         # Low-level HTTP client
+│   │   ├── jira_service.py     # Jira operations orchestration
+│   │   └── metrics_service.py  # Metrics computation
+│   ├── repositories/           # Data persistence
+│   │   └── cache_repository.py # File-based cache
+│   └── ui/                     # Presentation layer
+│       ├── styles.py           # CSS centralized
+│       ├── icons.py            # SVG icons (Greenn design)
+│       ├── components/         # Reusable UI components
+│       │   ├── sidebar.py
+│       │   ├── metric_cards.py
+│       │   ├── charts.py
+│       │   └── tables.py
+│       └── pages/              # Page compositions
+│           ├── dashboard.py    # Sprint analysis
+│           └── overview.py     # 30-day comparison
+├── .streamlit/
+│   └── config.toml             # Streamlit theme
 ├── requirements.txt
-├── config.py               # Variáveis de ambiente e mapeamento de projetos
-├── jira_client.py          # Wrapper da API Jira (boards, sprints, issues)
-├── data_processor.py       # Métricas, cache TTL, DataFrames
-├── app.py                  # Dashboard principal (Sprint Analysis)
-├── pages/
-│   └── 01_Visão_Geral.py  # Página de visão geral dos últimos 30 dias
-└── .cache/                 # Cache local de respostas da API (auto-gerado)
+└── .env.example
 ```
 
----
+### Princípios de Design
 
-## Cache
+- **Separation of Concerns**: Cada módulo tem uma única responsabilidade
+- **Dependency Injection**: Services recebem dependências via construtor
+- **Dataclasses**: Models são imutáveis (frozen=True) quando possível
+- **Type Hints**: Tipagem completa para melhor IDE support
+- **Caching**: Cache em dois níveis (Streamlit + filesystem)
 
-Dados são cacheados localmente por **15 minutos** para evitar chamadas excessivas ao Jira.
-Use o botão **"🔄 Atualizar dados"** na sidebar para forçar uma atualização imediata.
+## Instalação Local
 
----
+```bash
+# Clone o repositório
+git clone https://github.com/sotosaas/voomp-sprint-quality.git
+cd voomp-sprint-quality
 
-## Definições
+# Crie um ambiente virtual
+python -m venv venv
+source venv/bin/activate  # ou venv\Scripts\activate no Windows
 
-| Termo | Definição |
-|-------|-----------|
-| **Card entregue** | Issue com status `Em produção` na sprint selecionada |
-| **Sub-bug** | Sub-tarefa do tipo `Sub-bug` vinculada ao card pai |
-| **Quality Score** | `cards_entregues / (sub_bugs + 1)` — quanto maior, melhor |
-| **Taxa de bug** | % de cards que geraram pelo menos 1 sub-bug |
+# Instale as dependências
+pip install -r requirements.txt
+
+# Configure as credenciais
+cp .env.example .env
+# Edite .env com suas credenciais Jira
+```
+
+## Configuração
+
+### Variáveis de Ambiente
+
+| Variável | Descrição |
+|----------|-----------|
+| `JIRA_URL` | URL do Jira (ex: `https://cogna.atlassian.net`) |
+| `JIRA_EMAIL` | Email da conta Jira |
+| `JIRA_API_TOKEN` | Token de API Jira |
+
+### Obter Token de API
+
+1. Acesse [Atlassian API Tokens](https://id.atlassian.com/manage-profile/security/api-tokens)
+2. Clique em "Create API token"
+3. Dê um nome (ex: "Sprint Quality Dashboard")
+4. Copie o token gerado
+
+## Execução
+
+```bash
+streamlit run app.py
+```
+
+Acesse: http://localhost:8501
+
+## Features
+
+- **Dashboard por Sprint**: Análise detalhada de cards e bugs por sprint
+- **Ranking de Desenvolvedores**: Score de qualidade (cards ÷ bugs + 1)
+- **Tendência de Qualidade**: Evolução ao longo das sprints
+- **Visão Geral**: Comparativo de 30 dias entre todos os produtos
+- **Cache Inteligente**: 15 min em arquivo + 30 min no Streamlit
+
+## Produtos Monitorados
+
+| Projeto | Nome | Descrição |
+|---------|------|-----------|
+| VADM | Admin | Painel administrativo |
+| VPLY | Play | Plataforma de vídeos |
+| VMPG | Meios de Pagamento | Sistema de pagamentos |
+| VSUS | Sustentação | Suporte e manutenção |
+| VBEP | Backoffice ERP | Sistema financeiro |
+
+## Deploy no Streamlit Cloud
+
+1. Fork/push para GitHub
+2. Acesse [share.streamlit.io](https://share.streamlit.io)
+3. Conecte o repositório
+4. Configure secrets:
+
+```toml
+# .streamlit/secrets.toml (NÃO commitar!)
+JIRA_URL = "https://cogna.atlassian.net"
+JIRA_EMAIL = "seu-email@empresa.com"
+JIRA_API_TOKEN = "seu-token-aqui"
+```
+
+## Licença
+
+Uso interno Voomp/Cogna.
