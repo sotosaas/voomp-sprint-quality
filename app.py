@@ -1,7 +1,7 @@
 """app.py
 
 Sprint Quality Dashboard — Voomp
-Fixed: Plotly xaxis conflict, deprecated use_container_width
+Collapsible sidebar with icon-only mode when minimized.
 """
 
 import streamlit as st
@@ -31,6 +31,13 @@ st.set_page_config(
 )
 
 # ------------------------------------------------------------------
+# Session state for sidebar collapse
+# ------------------------------------------------------------------
+
+if "sidebar_collapsed" not in st.session_state:
+    st.session_state.sidebar_collapsed = False
+
+# ------------------------------------------------------------------
 # Inject secrets (Streamlit Cloud)
 # ------------------------------------------------------------------
 
@@ -44,14 +51,16 @@ except Exception:
     pass
 
 # ------------------------------------------------------------------
-# CSS Styling - Simple and stable
+# CSS Styling - Dynamic based on sidebar state
 # ------------------------------------------------------------------
 
-st.markdown("""
+sidebar_width = "80px" if st.session_state.sidebar_collapsed else "280px"
+
+st.markdown(f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-:root {
+:root {{
     --bg: #f9fafb;
     --card: #ffffff;
     --fg: #18181b;
@@ -61,70 +70,120 @@ st.markdown("""
     --orange: #f97316;
     --orange-light: #fff7ed;
     --radius: 0.5rem;
-}
+}}
 
-html, body, [class*="st-"] { font-family: 'Inter', sans-serif !important; }
-.stApp { background: var(--bg) !important; }
+html, body, [class*="st-"] {{ font-family: 'Inter', sans-serif !important; }}
+.stApp {{ background: var(--bg) !important; }}
 
-/* Sidebar */
-section[data-testid="stSidebar"] {
+/* Sidebar - controlled width */
+section[data-testid="stSidebar"] {{
     background: var(--card) !important;
     border-right: 1px solid var(--border) !important;
-}
+    width: {sidebar_width} !important;
+    min-width: {sidebar_width} !important;
+}}
+
+section[data-testid="stSidebar"] > div {{
+    width: {sidebar_width} !important;
+}}
+
+/* Icon button style for collapsed mode */
+.icon-btn {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    font-size: 1.5rem;
+    margin: 4px auto;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}}
+
+.icon-btn:hover {{
+    background: var(--muted);
+    border-color: var(--border);
+}}
+
+.icon-btn.active {{
+    background: var(--orange-light);
+    border-color: var(--orange);
+}}
+
+/* Toggle button */
+.toggle-btn {{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 8px;
+    background: var(--muted);
+    border-radius: var(--radius);
+    cursor: pointer;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    color: var(--muted-fg);
+}}
+
+.toggle-btn:hover {{
+    background: var(--border);
+}}
 
 /* Metric cards */
-[data-testid="metric-container"] {
+[data-testid="metric-container"] {{
     background: var(--card) !important;
     border: 1px solid var(--border) !important;
     border-radius: var(--radius) !important;
     padding: 1rem 1.25rem !important;
     box-shadow: 0 1px 2px rgba(0,0,0,.05) !important;
-}
+}}
 
-[data-testid="metric-container"] label {
+[data-testid="metric-container"] label {{
     color: var(--muted-fg) !important;
     font-size: .7rem !important;
     font-weight: 600 !important;
     text-transform: uppercase !important;
     letter-spacing: .04em !important;
-}
+}}
 
-[data-testid="metric-container"] [data-testid="stMetricValue"] {
+[data-testid="metric-container"] [data-testid="stMetricValue"] {{
     color: var(--fg) !important;
     font-size: 1.5rem !important;
     font-weight: 700 !important;
-}
+}}
 
 /* DataFrames */
-[data-testid="stDataFrame"] {
+[data-testid="stDataFrame"] {{
     border: 1px solid var(--border) !important;
     border-radius: var(--radius) !important;
     overflow: hidden !important;
-}
+}}
 
 /* Buttons */
-.stButton button {
+.stButton button {{
     background: var(--orange) !important;
     color: #fff !important;
     border: none !important;
     border-radius: var(--radius) !important;
     font-weight: 600 !important;
-}
+}}
 
-.stButton button:hover {
+.stButton button:hover {{
     background: #ea580c !important;
-}
+}}
 
 /* Headers */
-h1, h2, h3 { font-family: 'Inter', sans-serif !important; color: var(--fg) !important; }
+h1, h2, h3 {{ font-family: 'Inter', sans-serif !important; color: var(--fg) !important; }}
 
 /* Hide Streamlit branding */
-#MainMenu, footer, header { visibility: hidden !important; }
+#MainMenu, footer, header {{ visibility: hidden !important; }}
 
-@media(max-width:900px) {
-    [data-testid="metric-container"] { padding: .75rem !important; }
-    [data-testid="metric-container"] [data-testid="stMetricValue"] { font-size: 1.25rem !important; }
-}
+@media(max-width:900px) {{
+    [data-testid="metric-container"] {{ padding: .75rem !important; }}
+    [data-testid="metric-container"] [data-testid="stMetricValue"] {{ font-size: 1.25rem !important; }}
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -211,42 +270,83 @@ COLOR_PRIMARY = "#f97316"
 
 
 # ------------------------------------------------------------------
-# Sidebar — Product Navigation
+# Sidebar — Collapsible Product Navigation
 # ------------------------------------------------------------------
 
 with st.sidebar:
-    st.markdown("## 🐛 Sprint Quality")
-    st.markdown("---")
-    st.markdown("**PRODUTOS**")
+    # Toggle button
+    toggle_icon = "◀️" if not st.session_state.sidebar_collapsed else "▶️"
+    toggle_label = "Recolher" if not st.session_state.sidebar_collapsed else ""
     
-    for key, name in PROJECTS.items():
-        icon = PRODUCT_ICONS.get(key, "📁")
-        is_active = st.session_state.selected_project == key
-        
-        if is_active:
-            st.markdown(f"""
-            <div style="background: #fff7ed; border-left: 3px solid #f97316; 
-                        border-radius: 0 6px 6px 0; padding: 10px 12px; margin: 4px 0;">
-                <span style="color: #f97316; font-weight: 600;">{icon} {name}</span>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            if st.button(f"{icon} {name}", key=f"menu_{key}", use_container_width=True):
-                st.session_state.selected_project = key
-                st.session_state.selected_sprint_id = None
-                st.session_state.selected_sprint_name = ""
-                st.rerun()
-    
-    st.markdown("---")
-    
-    if st.button("🔄 Atualizar dados", use_container_width=True):
-        load_sprints.clear()
-        load_issues.clear()
-        load_sprint_trend.clear()
-        clear_cache()
+    if st.button(f"{toggle_icon} {toggle_label}".strip(), key="toggle_sidebar", use_container_width=True):
+        st.session_state.sidebar_collapsed = not st.session_state.sidebar_collapsed
         st.rerun()
     
-    st.caption("Cache: 30 min")
+    if st.session_state.sidebar_collapsed:
+        # COLLAPSED MODE: Icons only
+        st.markdown("<div style='text-align: center; margin: 10px 0;'>🐛</div>", unsafe_allow_html=True)
+        st.markdown("---")
+        
+        for key, name in PROJECTS.items():
+            icon = PRODUCT_ICONS.get(key, "📁")
+            is_active = st.session_state.selected_project == key
+            
+            # Use columns to center the button
+            _, col_icon, _ = st.columns([0.2, 0.6, 0.2])
+            with col_icon:
+                btn_type = "primary" if is_active else "secondary"
+                if st.button(icon, key=f"icon_{key}", help=name, type=btn_type):
+                    st.session_state.selected_project = key
+                    st.session_state.selected_sprint_id = None
+                    st.session_state.selected_sprint_name = ""
+                    st.rerun()
+        
+        st.markdown("---")
+        
+        # Refresh button (icon only)
+        _, col_refresh, _ = st.columns([0.2, 0.6, 0.2])
+        with col_refresh:
+            if st.button("🔄", key="refresh_collapsed", help="Atualizar dados"):
+                load_sprints.clear()
+                load_issues.clear()
+                load_sprint_trend.clear()
+                clear_cache()
+                st.rerun()
+    
+    else:
+        # EXPANDED MODE: Full menu
+        st.markdown("## 🐛 Sprint Quality")
+        st.markdown("---")
+        st.markdown("**PRODUTOS**")
+        
+        for key, name in PROJECTS.items():
+            icon = PRODUCT_ICONS.get(key, "📁")
+            is_active = st.session_state.selected_project == key
+            
+            if is_active:
+                st.markdown(f"""
+                <div style="background: #fff7ed; border-left: 3px solid #f97316; 
+                            border-radius: 0 6px 6px 0; padding: 10px 12px; margin: 4px 0;">
+                    <span style="color: #f97316; font-weight: 600;">{icon} {name}</span>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                if st.button(f"{icon} {name}", key=f"menu_{key}", use_container_width=True):
+                    st.session_state.selected_project = key
+                    st.session_state.selected_sprint_id = None
+                    st.session_state.selected_sprint_name = ""
+                    st.rerun()
+        
+        st.markdown("---")
+        
+        if st.button("🔄 Atualizar dados", key="refresh_expanded", use_container_width=True):
+            load_sprints.clear()
+            load_issues.clear()
+            load_sprint_trend.clear()
+            clear_cache()
+            st.rerun()
+        
+        st.caption("Cache: 30 min")
 
 
 # ------------------------------------------------------------------
