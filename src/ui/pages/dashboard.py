@@ -66,14 +66,14 @@ class DashboardPage:
         sprint = self._render_sprint_selector(sprints)
 
         # Save selected sprint
-        self._st.session_state.selected_sprint_id = sprint.id
-        self._st.session_state.selected_sprint_name = sprint.name
+        self._st.session_state.selected_sprint_id = sprint["id"]
+        self._st.session_state.selected_sprint_name = sprint["name"]
 
         self._st.markdown("---")
 
         # Load issues
         try:
-            df = self._load_issues(project_key, sprint.id, sprint.name)
+            df = self._load_issues(project_key, sprint["id"], sprint["name"])
         except JiraAuthError as e:
             self._st.error(f"❌ Erro de autenticação: {e}")
             return
@@ -86,7 +86,7 @@ class DashboardPage:
 
         if df.empty:
             status_display = ", ".join(f"**'{s}'**" for s in self._config.production_statuses)
-            self._st.info(f"Nenhum card com status {status_display} na sprint **{sprint.name}**.")
+            self._st.info(f"Nenhum card com status {status_display} na sprint **{sprint['name']}**.")
             return
 
         # KPIs
@@ -101,7 +101,7 @@ class DashboardPage:
         self._st.markdown("---")
         self._st.markdown("### 🏆 Ranking de Desenvolvedores")
         self._st.caption("Score = cards entregues ÷ (sub-bugs + 1) · quanto maior, melhor")
-        issues = self._metrics.get_sprint_issues(project_key, sprint.id)
+        issues = self._metrics.get_sprint_issues(project_key, sprint["id"])
         ranking = self._metrics.compute_dev_ranking(issues)
         render_dev_ranking_table(self._st, [r.to_dict() for r in ranking])
 
@@ -144,17 +144,18 @@ class DashboardPage:
     def _cache_ttl(self) -> int:
         return self._config.streamlit_cache_ttl
 
-    def _load_sprints(self, project_key: str) -> list:
-        """Load sprints with caching."""
+    def _load_sprints(self, project_key: str) -> list[dict]:
+        """Load sprints with caching. Returns list of dicts for serializability."""
         @self._st.cache_data(ttl=self._cache_ttl, show_spinner=False)
-        def _fetch(_project_key: str):
+        def _fetch(_project_key: str) -> list[dict]:
             sprints = self._jira.get_sprints_for_project(
                 _project_key,
                 state="active,closed",
                 max_results=50,
                 year=datetime.now().year,
             )
-            return list(reversed(sprints))
+            # Convert to dicts for pickle serialization
+            return [s.to_dict() for s in reversed(sprints)]
         
         return _fetch(project_key)
 
@@ -169,10 +170,10 @@ class DashboardPage:
         
         return _fetch(project_key, sprint_id, sprint_name)
 
-    def _render_sprint_selector(self, sprints: list) -> "Sprint":
-        """Render sprint selector and return selected sprint."""
-        sprint_labels = [s.name for s in sprints]
-        sprint_ids = [s.id for s in sprints]
+    def _render_sprint_selector(self, sprints: list[dict]) -> dict:
+        """Render sprint selector and return selected sprint dict."""
+        sprint_labels = [s["name"] for s in sprints]
+        sprint_ids = [s["id"] for s in sprints]
 
         default_idx = 0
         if self._st.session_state.selected_sprint_id in sprint_ids:
@@ -192,7 +193,9 @@ class DashboardPage:
         chosen_sprint = sprints[chosen_idx]
 
         with col_status:
-            self._st.markdown(f"**{chosen_sprint.status_label}**")
+            state = chosen_sprint.get("state", "")
+            status_label = "🟢 Ativa" if state == "active" else "✅ Fechada"
+            self._st.markdown(f"**{status_label}**")
 
         return chosen_sprint
 
