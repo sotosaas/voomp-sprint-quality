@@ -1,7 +1,7 @@
 """app.py
 
 Sprint Quality Dashboard — Voomp
-Clean, stable implementation with sidebar product navigation.
+Collapsible sidebar with icon-only mode.
 """
 
 import streamlit as st
@@ -44,109 +44,6 @@ except Exception:
     pass
 
 # ------------------------------------------------------------------
-# CSS Styling — Simple and stable
-# ------------------------------------------------------------------
-
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-:root {
-    --bg: #f9fafb;
-    --card: #ffffff;
-    --fg: #18181b;
-    --border: #e5e7eb;
-    --muted: #f3f4f6;
-    --muted-fg: #71717a;
-    --orange: #f97316;
-    --orange-light: #fff7ed;
-    --radius: 0.5rem;
-}
-
-html, body, [class*="st-"] { font-family: 'Inter', sans-serif !important; }
-.stApp { background: var(--bg) !important; }
-
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background: var(--card) !important;
-    border-right: 1px solid var(--border) !important;
-}
-
-section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
-    font-size: 0.9rem;
-}
-
-/* Metric cards */
-[data-testid="metric-container"] {
-    background: var(--card) !important;
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    padding: 1rem 1.25rem !important;
-    box-shadow: 0 1px 2px rgba(0,0,0,.05) !important;
-}
-
-[data-testid="metric-container"] label {
-    color: var(--muted-fg) !important;
-    font-size: .7rem !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    letter-spacing: .04em !important;
-}
-
-[data-testid="metric-container"] [data-testid="stMetricValue"] {
-    color: var(--fg) !important;
-    font-size: 1.5rem !important;
-    font-weight: 700 !important;
-}
-
-/* DataFrames */
-[data-testid="stDataFrame"] {
-    border: 1px solid var(--border) !important;
-    border-radius: var(--radius) !important;
-    overflow: hidden !important;
-}
-
-/* Buttons */
-.stButton button {
-    background: var(--orange) !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: var(--radius) !important;
-    font-weight: 600 !important;
-}
-
-.stButton button:hover {
-    background: #ea580c !important;
-}
-
-/* Headers */
-h1, h2, h3 { font-family: 'Inter', sans-serif !important; color: var(--fg) !important; }
-
-/* Hide Streamlit branding */
-#MainMenu, footer, header { visibility: hidden !important; }
-
-/* Active menu item styling */
-.menu-active {
-    background: #fff7ed !important;
-    border-left: 3px solid #f97316 !important;
-    border-radius: 0 8px 8px 0 !important;
-    padding: 8px 12px !important;
-    margin: 2px 0 !important;
-}
-
-.menu-active span {
-    color: #f97316 !important;
-    font-weight: 600 !important;
-}
-
-@media(max-width:900px) {
-    [data-testid="metric-container"] { padding: .75rem !important; }
-    [data-testid="metric-container"] [data-testid="stMetricValue"] { font-size: 1.25rem !important; }
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ------------------------------------------------------------------
 # Session state
 # ------------------------------------------------------------------
 
@@ -156,6 +53,8 @@ if "selected_sprint_id" not in st.session_state:
     st.session_state.selected_sprint_id = None
 if "selected_sprint_name" not in st.session_state:
     st.session_state.selected_sprint_name = ""
+if "sidebar_expanded" not in st.session_state:
+    st.session_state.sidebar_expanded = True
 
 # ------------------------------------------------------------------
 # Product icons mapping
@@ -168,6 +67,105 @@ PRODUCT_ICONS = {
     "VSUS": "🔧",
     "VBEP": "📊",
 }
+
+# ------------------------------------------------------------------
+# CSS Styling
+# ------------------------------------------------------------------
+
+# Determine sidebar width based on state
+sidebar_width = "280px" if st.session_state.sidebar_expanded else "70px"
+
+st.markdown(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {{
+    --bg: #f9fafb;
+    --card: #ffffff;
+    --fg: #18181b;
+    --border: #e5e7eb;
+    --muted: #f3f4f6;
+    --muted-fg: #71717a;
+    --orange: #f97316;
+    --orange-light: #fff7ed;
+    --radius: 0.5rem;
+}}
+
+html, body, [class*="st-"] {{ font-family: 'Inter', sans-serif !important; }}
+.stApp {{ background: var(--bg) !important; }}
+
+/* Sidebar width control */
+section[data-testid="stSidebar"] {{
+    background: var(--card) !important;
+    border-right: 1px solid var(--border) !important;
+    width: {sidebar_width} !important;
+    min-width: {sidebar_width} !important;
+}}
+
+section[data-testid="stSidebar"] > div:first-child {{
+    width: {sidebar_width} !important;
+    min-width: {sidebar_width} !important;
+}}
+
+section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {{
+    width: {sidebar_width} !important;
+}}
+
+/* Metric cards */
+[data-testid="metric-container"] {{
+    background: var(--card) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    padding: 1rem 1.25rem !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,.05) !important;
+}}
+
+[data-testid="metric-container"] label {{
+    color: var(--muted-fg) !important;
+    font-size: .7rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .04em !important;
+}}
+
+[data-testid="metric-container"] [data-testid="stMetricValue"] {{
+    color: var(--fg) !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+}}
+
+/* DataFrames */
+[data-testid="stDataFrame"] {{
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius) !important;
+    overflow: hidden !important;
+}}
+
+/* Buttons */
+.stButton button {{
+    background: var(--orange) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius) !important;
+    font-weight: 600 !important;
+}}
+
+.stButton button:hover {{
+    background: #ea580c !important;
+}}
+
+/* Headers */
+h1, h2, h3 {{ font-family: 'Inter', sans-serif !important; color: var(--fg) !important; }}
+
+/* Hide Streamlit branding */
+#MainMenu, footer, header {{ visibility: hidden !important; }}
+
+@media(max-width:900px) {{
+    [data-testid="metric-container"] {{ padding: .75rem !important; }}
+    [data-testid="metric-container"] [data-testid="stMetricValue"] {{ font-size: 1.25rem !important; }}
+}}
+</style>
+""", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------
 # Config validation
@@ -229,30 +227,57 @@ COLOR_PRIMARY = "#f97316"
 
 
 # ------------------------------------------------------------------
-# Sidebar — Product Navigation
+# Sidebar — Collapsible Product Navigation
 # ------------------------------------------------------------------
 
 with st.sidebar:
-    st.markdown("## 🐛 Sprint Quality")
-    st.markdown("---")
+    is_expanded = st.session_state.sidebar_expanded
     
-    # Product menu section
-    st.markdown("**PRODUTOS**")
+    # Toggle button at top
+    toggle_label = "« Minimizar" if is_expanded else "»"
+    if st.button(toggle_label, key="toggle_sidebar", use_container_width=True):
+        st.session_state.sidebar_expanded = not st.session_state.sidebar_expanded
+        st.rerun()
     
+    if is_expanded:
+        st.markdown("## 🐛 Sprint Quality")
+        st.markdown("---")
+        st.markdown("**PRODUTOS**")
+    else:
+        st.markdown("🐛")
+        st.markdown("---")
+    
+    # Product menu
     for key, name in PROJECTS.items():
         icon = PRODUCT_ICONS.get(key, "📁")
         is_active = st.session_state.selected_project == key
         
-        if is_active:
-            # Show active item with highlight
-            st.markdown(f"""
-            <div class="menu-active">
-                <span>{icon} {name}</span>
-            </div>
-            """, unsafe_allow_html=True)
+        if is_expanded:
+            # Full label with icon and name
+            label = f"{icon} {name}"
         else:
-            # Clickable button for inactive items
-            if st.button(f"{icon} {name}", key=f"menu_{key}", use_container_width=True):
+            # Icon only
+            label = icon
+        
+        # Style active item differently
+        if is_active:
+            if is_expanded:
+                st.markdown(f"""
+                <div style="background: #fff7ed; border-left: 3px solid #f97316; 
+                            border-radius: 0 6px 6px 0; padding: 10px 12px; margin: 4px 0;">
+                    <span style="color: #f97316; font-weight: 600;">{label}</span>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"""
+                <div style="background: #fff7ed; border-radius: 6px; padding: 8px; 
+                            margin: 4px 0; text-align: center; border: 2px solid #f97316;">
+                    <span style="font-size: 1.2rem;">{icon}</span>
+                </div>
+                """, unsafe_allow_html=True)
+        else:
+            if st.button(label, key=f"menu_{key}", use_container_width=True, 
+                        help=name if not is_expanded else None):
                 st.session_state.selected_project = key
                 st.session_state.selected_sprint_id = None
                 st.session_state.selected_sprint_name = ""
@@ -261,14 +286,21 @@ with st.sidebar:
     st.markdown("---")
     
     # Refresh button
-    if st.button("🔄 Atualizar dados", use_container_width=True):
-        load_sprints.clear()
-        load_issues.clear()
-        load_sprint_trend.clear()
-        clear_cache()
-        st.rerun()
-    
-    st.caption("Cache: 30 min")
+    if is_expanded:
+        if st.button("🔄 Atualizar dados", use_container_width=True):
+            load_sprints.clear()
+            load_issues.clear()
+            load_sprint_trend.clear()
+            clear_cache()
+            st.rerun()
+        st.caption("Cache: 30 min")
+    else:
+        if st.button("🔄", key="refresh_mini", use_container_width=True, help="Atualizar dados"):
+            load_sprints.clear()
+            load_issues.clear()
+            load_sprint_trend.clear()
+            clear_cache()
+            st.rerun()
 
 
 # ------------------------------------------------------------------
